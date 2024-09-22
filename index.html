@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade Calculator</title>
+    <!-- Include PyScript -->
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+    <!-- Link to external CSS -->
+    <link rel="stylesheet" href="static/css/styles.css" />
+	 <link rel="icon" href="static/images/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="container">
+         <div class="logo">
+        <span class="logo-text">Grade<span class="hub">hub</span></span>
+		</div>
+        <input type="number" id="prelim" placeholder="Enter Prelim Grade (0-100)" min="0" max="100" step="0.01">
+        <button id="calculateBtn">I am 18 or older - Calculate</button>
+    </div>
+
+    <!-- The Modal -->	
+    <div id="resultModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close" id="closeModal">&times;</span>
+                <h2>Calculation Results</h2>
+            </div>
+            <div class="modal-body">
+                <p><b>Prelim Grade:</b> <span id="prelimGrade"></span></p>
+                <p><b>Midterm Grade Required:</b> <span id="midtermGrade"></span></p>
+                <p><b>Final Grade Required:</b> <span id="finalGrade"></span></p>
+                <p id="passMessage" class="message"></p>
+                <p id="deansMessage" class="message"></p>
+                <p id="errorMessage" class="error"></p> <!-- Error message moved to the modal -->
+            </div>
+            <div class="modal-footer">
+                <button id="closeModalBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <py-script>
+        from pyscript import Element
+
+        async def calculate_grade(event):
+            # Hide previous results and clear messages
+            result_element = Element("resultModal").element
+            result_element.style.display = "none"
+            Element("prelimGrade").element.innerHTML = "N/A"
+            Element("midtermGrade").element.innerHTML = "N/A"
+            Element("finalGrade").element.innerHTML = "N/A"
+            Element("passMessage").element.innerHTML = ""
+            Element("deansMessage").element.innerHTML = ""
+            Element("errorMessage").element.innerHTML = ""
+
+            prelim_element = Element("prelim").element
+
+            try:
+                # Retrieve and validate input value
+                prelim = prelim_element.value.strip()
+                if prelim == "":
+                    raise ValueError("Prelim grade cannot be empty.")
+                    
+                
+                prelim = float(prelim)
+                if prelim < 0 or prelim > 100:
+                    raise ValueError("Grade must be between 0 and 100.")
+                
+            except ValueError as e:
+                Element("errorMessage").element.innerHTML = str(e)
+                result_element.style.display = "block"  # Show the modal with error message
+                prelim_element.value = ""  # Clear the input field
+                prelim_element.focus()  # Focus back to the input field for correction
+                return
+
+            # Calculate required grades and messages
+            passing_grade = 75
+            deans_lister_grade = 90
+            prelim_percent = 0.20
+            midterm_percent = 0.30
+            final_percent = 0.50
+
+            current_total = prelim * prelim_percent
+            required_total = passing_grade - current_total
+
+            if required_total > 0:
+                required_midterm_and_final = required_total / (midterm_percent + final_percent)
+                if required_midterm_and_final > 90:
+                    pass_message = "It is difficult to pass, as the required grades are very high."
+                    pass_message_color = "darkred"
+                else:
+                    pass_message = "You have a chance to pass!"
+                    pass_message_color = "darkgreen"
+            else:
+                required_midterm_and_final = 0
+                pass_message = "Your current grade is high enough to pass!"
+                pass_message_color = "darkblue"
+
+            if prelim >= deans_lister_grade:
+                deans_message = "You already qualify for Dean's Lister based on your Prelim grade!"
+                deans_message_color = "darkgreen"
+            else:
+                required_deans_total = deans_lister_grade - current_total
+                required_deans_midfinal = required_deans_total / (midterm_percent + final_percent)
+                deans_message = (
+                    f"The required grade for you to be a Dean’s Lister is "
+                    f"{required_deans_midfinal:.2f}% (midterm) and {required_deans_midfinal:.2f}% (finals)."
+                )
+                deans_message_color = "orange"
+
+            # Update UI with results
+            Element("prelimGrade").element.innerHTML = f"{prelim:.2f}%"
+            Element("midtermGrade").element.innerHTML = f"{required_midterm_and_final:.2f}%"
+            Element("finalGrade").element.innerHTML = f"{required_midterm_and_final:.2f}%"
+            Element("passMessage").element.innerHTML = pass_message
+            Element("passMessage").element.style.color = pass_message_color
+            Element("deansMessage").element.innerHTML = deans_message
+            Element("deansMessage").element.style.color = deans_message_color
+            
+            # Display modal
+            result_element.style.display = "block"
+
+        # Bind event to button click
+        Element("calculateBtn").element.onclick = calculate_grade
+
+        # Modal close functionality
+        def close_modal(event):
+            Element("resultModal").element.style.display = "none"
+
+        Element("closeModal").element.onclick = close_modal
+        Element("closeModalBtn").element.onclick = close_modal
+    </py-script>
+</body>
+</html>
